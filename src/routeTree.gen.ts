@@ -9,38 +9,128 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as MyFormsRouteImport } from './routes/my-forms'
+import { Route as DocsRouteImport } from './routes/docs'
+import { Route as BuilderRouteImport } from './routes/builder'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as FormBlobIdRouteImport } from './routes/form.$blobId'
+import { Route as AdminBlobIdRouteImport } from './routes/admin.$blobId'
 
+const MyFormsRoute = MyFormsRouteImport.update({
+  id: '/my-forms',
+  path: '/my-forms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsRoute = DocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuilderRoute = BuilderRouteImport.update({
+  id: '/builder',
+  path: '/builder',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FormBlobIdRoute = FormBlobIdRouteImport.update({
+  id: '/form/$blobId',
+  path: '/form/$blobId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminBlobIdRoute = AdminBlobIdRouteImport.update({
+  id: '/admin/$blobId',
+  path: '/admin/$blobId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/builder': typeof BuilderRoute
+  '/docs': typeof DocsRoute
+  '/my-forms': typeof MyFormsRoute
+  '/admin/$blobId': typeof AdminBlobIdRoute
+  '/form/$blobId': typeof FormBlobIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/builder': typeof BuilderRoute
+  '/docs': typeof DocsRoute
+  '/my-forms': typeof MyFormsRoute
+  '/admin/$blobId': typeof AdminBlobIdRoute
+  '/form/$blobId': typeof FormBlobIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/builder': typeof BuilderRoute
+  '/docs': typeof DocsRoute
+  '/my-forms': typeof MyFormsRoute
+  '/admin/$blobId': typeof AdminBlobIdRoute
+  '/form/$blobId': typeof FormBlobIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/builder'
+    | '/docs'
+    | '/my-forms'
+    | '/admin/$blobId'
+    | '/form/$blobId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/builder'
+    | '/docs'
+    | '/my-forms'
+    | '/admin/$blobId'
+    | '/form/$blobId'
+  id:
+    | '__root__'
+    | '/'
+    | '/builder'
+    | '/docs'
+    | '/my-forms'
+    | '/admin/$blobId'
+    | '/form/$blobId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BuilderRoute: typeof BuilderRoute
+  DocsRoute: typeof DocsRoute
+  MyFormsRoute: typeof MyFormsRoute
+  AdminBlobIdRoute: typeof AdminBlobIdRoute
+  FormBlobIdRoute: typeof FormBlobIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/my-forms': {
+      id: '/my-forms'
+      path: '/my-forms'
+      fullPath: '/my-forms'
+      preLoaderRoute: typeof MyFormsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/builder': {
+      id: '/builder'
+      path: '/builder'
+      fullPath: '/builder'
+      preLoaderRoute: typeof BuilderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +138,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/form/$blobId': {
+      id: '/form/$blobId'
+      path: '/form/$blobId'
+      fullPath: '/form/$blobId'
+      preLoaderRoute: typeof FormBlobIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/$blobId': {
+      id: '/admin/$blobId'
+      path: '/admin/$blobId'
+      fullPath: '/admin/$blobId'
+      preLoaderRoute: typeof AdminBlobIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BuilderRoute: BuilderRoute,
+  DocsRoute: DocsRoute,
+  MyFormsRoute: MyFormsRoute,
+  AdminBlobIdRoute: AdminBlobIdRoute,
+  FormBlobIdRoute: FormBlobIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
