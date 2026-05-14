@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Loader2, Copy, Download, Star, Check, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { getForm, getResponses, computeStats, exportCsv, downloadCsv, updateResponse, deleteResponse, bulkUpdate, bulkDelete, truncateBlob } from '@/lib/walrus-mock';
 import type { FormSchema, FormResponse, AdminStats } from '@/types';
@@ -146,8 +146,8 @@ function Admin() {
               <tr><td colSpan={cols.length + 4} className="p-10 text-center text-muted-foreground">No responses yet. <Link to="/form/$blobId" params={{ blobId }} className="text-primary hover:underline">Open form</Link></td></tr>
             )}
             {filtered.map((r, i) => (
-              <>
-                <tr key={r.id} className={`border-b border-border transition-colors ${r.starred ? 'bg-accent/40' : 'hover:bg-secondary/50'}`}>
+              <Fragment key={r.id}>
+                <tr className={`border-b border-border transition-colors ${r.starred ? 'bg-accent/40' : 'hover:bg-secondary/50'}`}>
                   <td className="p-3"><input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleSelect(r.id)} className="accent-primary" /></td>
                   <td className="p-3 font-mono text-xs">{i + 1}</td>
                   <td className="p-3 text-xs text-muted-foreground">{new Date(r.submittedAt).toLocaleString()}</td>
@@ -165,7 +165,7 @@ function Admin() {
                   </td>
                 </tr>
                 {expanded === r.id && (
-                  <tr key={r.id + '-x'} className="bg-secondary/30">
+                  <tr className="bg-secondary/30">
                     <td colSpan={cols.length + 4} className="p-5">
                       <div className="grid gap-3 sm:grid-cols-2">
                         {cols.map(c => (
@@ -179,7 +179,7 @@ function Admin() {
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>
