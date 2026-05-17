@@ -277,7 +277,7 @@ function Builder() {
     );
     setFormVersion(draft.formVersion || 1);
     setAccessControl(draft.accessControl || { provider: "formrus-rsa", keyId: makeAccessKeyId() });
-    setPublished(draft.publishedBlobId ? { blobId: draft.publishedBlobId } : null);
+    setPublished(null);
     toast.success("Draft loaded");
   };
 
