@@ -1,4 +1,5 @@
 import { decryptResponseEnvelope, encryptResponseData, isEncryptionEnvelope } from "@/lib/seal";
+import { looksLikeRichTextHtml, stripRichText } from "@/lib/rich-text";
 import type {
   AdminStats,
   AttachmentValue,
@@ -741,6 +742,7 @@ export function formatResponseValue(value: unknown): string {
     const attachment = value as AttachmentValue;
     return `${attachment.name} (${attachment.blobId})`;
   }
+  if (typeof value === "string" && looksLikeRichTextHtml(value)) return stripRichText(value);
   return String(value);
 }
 

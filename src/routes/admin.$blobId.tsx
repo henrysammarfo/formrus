@@ -48,6 +48,7 @@ import {
   updateLocalFormMetadata,
   updateResponse,
 } from "@/lib/walrus";
+import { sanitizeRichTextHtml } from "@/lib/rich-text";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/$blobId")({
@@ -811,9 +812,11 @@ function ResponseCard({
                   {col.label}
                 </div>
                 <div className="mt-1 break-words text-sm text-foreground">
-                  {response.decryptionStatus === "locked"
-                    ? "Encrypted - private key or Seal session required"
-                    : formatResponseValue(response.data[col.id]) || "-"}
+                  <ResponseValue
+                    field={col}
+                    locked={response.decryptionStatus === "locked"}
+                    value={response.data[col.id]}
+                  />
                 </div>
               </div>
             ))}
@@ -835,6 +838,29 @@ function ResponseCard({
       )}
     </article>
   );
+}
+
+function ResponseValue({
+  field,
+  value,
+  locked,
+}: {
+  field: FormSchema["fields"][number];
+  value: unknown;
+  locked: boolean;
+}) {
+  if (locked) return <>Encrypted - private key or Seal session required</>;
+  if (field.type === "richText" && typeof value === "string") {
+    const html = sanitizeRichTextHtml(value);
+    if (!html) return <>-</>;
+    return (
+      <div
+        className="prose prose-sm max-w-none [&_a]:text-primary [&_code]:rounded [&_code]:bg-white [&_code]:px-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_pre]:rounded-lg [&_pre]:bg-white [&_pre]:p-3 [&_ul]:list-disc [&_ul]:pl-5"
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    );
+  }
+  return <>{formatResponseValue(value) || "-"}</>;
 }
 
 function priorityClass(priority: Priority) {

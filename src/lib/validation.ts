@@ -1,5 +1,6 @@
 import { FIELD_TYPE_LABELS } from "@/types";
 import type { FormField, FormSchema } from "@/types";
+import { looksLikeRichTextHtml, stripRichText } from "@/lib/rich-text";
 
 export type ValidationSeverity = "error" | "warning";
 
@@ -67,6 +68,10 @@ function isSupportedFieldType(type: string): type is FormField["type"] {
 }
 
 export function isFilledValue(value: unknown): boolean {
+  if (typeof value === "string") {
+    const text = looksLikeRichTextHtml(value) ? stripRichText(value) : value.trim();
+    return text.length > 0;
+  }
   return (
     value !== undefined &&
     value !== null &&
