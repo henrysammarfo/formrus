@@ -1,0 +1,17 @@
+{
+  "name": "FORMRUS",
+  "short_name": "FORMRUS",
+  "description": "Walrus-native forms for feedback, applications, surveys, and encrypted submissions.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0EA5E9",
+  "icons": [
+    {
+      "src": "/formrus-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

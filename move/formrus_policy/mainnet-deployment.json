@@ -1,0 +1,12 @@
+{
+  "network": "mainnet",
+  "transactionDigest": "4FhwmFgxKcHKbGUdZGALi41kPe9cUDPv2ygoR4vGabUw",
+  "packageId": "0xbd268d40c8b685e98d420ef146a188e8422f8aeab750685d80071b342cee197e",
+  "accessPolicyObjectId": "0xecfdbc72a5dd9d7be5d1c803ab51784570ebc62140285158e47238d350a80872",
+  "upgradeCapObjectId": "0xe5d223983e7727bc7aeb0865d36c036b491a8aba00e0aba2ec8adc1c963d1595",
+  "publisherAddress": "0xaedafbdd3d1a78f4c0f5a9bb7eab16aea3b2a2414ba4ba05f0a8efabc306f754",
+  "sealApproveTarget": "0xbd268d40c8b685e98d420ef146a188e8422f8aeab750685d80071b342cee197e::formrus_policy::seal_approve",
+  "sealRegisterTarget": "0xbd268d40c8b685e98d420ef146a188e8422f8aeab750685d80071b342cee197e::formrus_policy::register_form",
+  "sealAddAdminTarget": "0xbd268d40c8b685e98d420ef146a188e8422f8aeab750685d80071b342cee197e::formrus_policy::add_form_admin",
+  "gasSpentMist": "19049080"
+}

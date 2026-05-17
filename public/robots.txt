@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://formrus.genesis-ai.workers.dev/sitemap.xml

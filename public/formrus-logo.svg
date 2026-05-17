@@ -1,0 +1,10 @@
+<svg width="560" height="128" viewBox="0 0 560 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="128" height="128" rx="30" fill="#07111F"/>
+  <path d="M26 38C26 31.373 31.373 26 38 26H92C98.627 26 104 31.373 104 38V48H50C43.373 48 38 53.373 38 60V102H26V38Z" fill="#0EA5E9"/>
+  <path d="M50 58H101V79H70C65.582 79 62 82.582 62 87V102H50V58Z" fill="#7DD3FC"/>
+  <path d="M73 89C73 84.582 76.582 81 81 81H102V102H73V89Z" fill="#FFFFFF"/>
+  <path d="M50 58H102" stroke="#07111F" stroke-width="8" stroke-linecap="round"/>
+  <path d="M62 101V89C62 82.373 67.373 77 74 77H102" stroke="#07111F" stroke-width="8" stroke-linecap="round"/>
+  <text x="156" y="78" fill="#07111F" font-family="Inter, Arial, sans-serif" font-size="48" font-weight="800" letter-spacing="-1.8">FORMRUS</text>
+  <text x="158" y="106" fill="#5B6B7C" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="600">Walrus-native form storage</text>
+</svg>

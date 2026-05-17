@@ -16,6 +16,12 @@ dist-ssr
 .nitro
 *.local
 
+# Generated Move compiler output
+move/**/build/
+
+# Raw local inspiration assets. Production assets live under src/assets.
+walrus photos to use/
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars

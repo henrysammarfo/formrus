@@ -1,0 +1,31 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#F7FBFF"/>
+  <rect x="60" y="54" width="1080" height="522" rx="44" fill="#07111F"/>
+  <circle cx="1000" cy="90" r="240" fill="#0EA5E9" fill-opacity="0.34"/>
+  <circle cx="220" cy="540" r="260" fill="#67E8F9" fill-opacity="0.24"/>
+  <path d="M92 408C247 349 368 361 505 426C654 497 764 505 1110 402V576H92V408Z" fill="#0EA5E9" fill-opacity="0.16"/>
+  <g transform="translate(94 88)">
+    <rect width="104" height="104" rx="24" fill="#FFFFFF"/>
+    <path d="M22 32C22 26.477 26.477 22 32 22H76C81.523 22 86 26.477 86 32V40H42C36.477 40 32 44.477 32 50V84H22V32Z" fill="#0EA5E9"/>
+    <path d="M42 49H84V66H59C55.686 66 53 68.686 53 72V84H42V49Z" fill="#7DD3FC"/>
+    <path d="M62 74C62 70.686 64.686 68 68 68H84V84H62V74Z" fill="#07111F"/>
+    <path d="M42 49H84" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+    <path d="M53 83V73C53 67.477 57.477 63 63 63H84" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  <text x="94" y="260" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="76" font-weight="800" letter-spacing="-3">FORMRUS</text>
+  <text x="98" y="326" fill="#BDEBFF" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="650">Forms that live on Walrus</text>
+  <text x="98" y="400" fill="#DCEBFA" font-family="Inter, Arial, sans-serif" font-size="25" font-weight="500">Build forms, collect rich responses, encrypt private feedback,</text>
+  <text x="98" y="438" fill="#DCEBFA" font-family="Inter, Arial, sans-serif" font-size="25" font-weight="500">and store submissions on Walrus mainnet.</text>
+  <g transform="translate(96 488)">
+    <rect width="268" height="54" rx="27" fill="#0EA5E9"/>
+    <text x="28" y="36" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Walrus-native forms</text>
+  </g>
+  <g transform="translate(884 136)">
+    <rect width="180" height="230" rx="24" fill="#FFFFFF" fill-opacity="0.94"/>
+    <rect x="24" y="30" width="132" height="16" rx="8" fill="#0EA5E9"/>
+    <rect x="24" y="68" width="96" height="12" rx="6" fill="#94A3B8"/>
+    <rect x="24" y="108" width="132" height="38" rx="12" fill="#E0F2FE"/>
+    <rect x="24" y="164" width="72" height="14" rx="7" fill="#07111F"/>
+    <circle cx="132" cy="171" r="18" fill="#0EA5E9"/>
+  </g>
+</svg>
