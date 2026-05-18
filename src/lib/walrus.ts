@@ -20,6 +20,7 @@ const DRAFTS_KEY = "formrus.drafts";
 const CREATOR_MANIFEST_POINTERS_KEY = "formrus.creatorManifestPointers";
 const RESPONSE_INDEX_POINTERS_KEY = "formrus.responseIndexPointers";
 const LOCAL_ATTACHMENT_FALLBACK_MAX_BYTES = 750_000;
+const LARGE_VIDEO_COMPAT_FORM_IDS = new Set(["i_vdlQiiEQZBGQvY4Ff5hwmDE0-ox22JTl25ewamDSU"]);
 
 const isBrowser = () => typeof window !== "undefined";
 const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
@@ -143,6 +144,19 @@ export function getDefaultStoragePolicy(): StoragePolicy {
       .split(",")
       .map((type) => type.trim())
       .filter(Boolean),
+  };
+}
+
+function applyRuntimeFormCompatibility(form: FormSchema): FormSchema {
+  if (!LARGE_VIDEO_COMPAT_FORM_IDS.has(form.blobId)) return form;
+  return {
+    ...form,
+    storagePolicy: {
+      ...getDefaultStoragePolicy(),
+      ...form.storagePolicy,
+      maxVideoSizeMb: Math.max(form.storagePolicy?.maxVideoSizeMb || 0, 20),
+      maxFilesPerResponse: Math.max(form.storagePolicy?.maxFilesPerResponse || 0, 2),
+    },
   };
 }
 
@@ -358,11 +372,11 @@ function indexLocalForm(form: FormSchema) {
 
 export async function getForm(blobId: string): Promise<FormSchema | null> {
   const local = read<FormSchema>(FORMS_KEY).find((f) => f.blobId === blobId);
-  if (local) return local;
+  if (local) return applyRuntimeFormCompatibility(local);
 
   const remote = await getJson<FormPayload>(blobId);
   if (!remote || !remote.title || !Array.isArray(remote.fields)) return null;
-  return {
+  return applyRuntimeFormCompatibility({
     blobId,
     title: remote.title,
     description: remote.description || "",
@@ -384,7 +398,7 @@ export async function getForm(blobId: string): Promise<FormSchema | null> {
     creatorManifestBlobId: remote.creatorManifestBlobId,
     responseIndexBlobId: remote.responseIndexBlobId,
     receipt: { blobId, storageMode: getWalrusConfig().aggregatorUrl ? "walrus" : "local" },
-  };
+  });
 }
 
 export async function listForms(): Promise<FormSchema[]> {
