@@ -1,0 +1,17 @@
+20.208.46.195.sslip.io {
+  header {
+    Access-Control-Allow-Origin "https://formrus.genesis-ai.workers.dev"
+    Access-Control-Allow-Methods "GET, PUT, OPTIONS"
+    Access-Control-Allow-Headers "Authorization, Content-Type"
+    Access-Control-Expose-Headers "*"
+  }
+
+  @options method OPTIONS
+  handle @options {
+    respond "" 204
+  }
+
+  handle {
+    reverse_proxy 127.0.0.1:31416
+  }
+}
