@@ -19,6 +19,7 @@ const BLOBS_KEY = "formrus.blobs";
 const DRAFTS_KEY = "formrus.drafts";
 const CREATOR_MANIFEST_POINTERS_KEY = "formrus.creatorManifestPointers";
 const RESPONSE_INDEX_POINTERS_KEY = "formrus.responseIndexPointers";
+const LOCAL_ATTACHMENT_FALLBACK_MAX_BYTES = 750_000;
 
 const isBrowser = () => typeof window !== "undefined";
 const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
@@ -299,6 +300,14 @@ export async function uploadAttachment(
   } catch (error) {
     fallbackReason = error instanceof Error ? error.message : "Walrus upload failed";
     console.warn(error);
+  }
+
+  if (file.size > LOCAL_ATTACHMENT_FALLBACK_MAX_BYTES) {
+    throw new Error(
+      fallbackReason
+        ? `Walrus upload failed before the file could be stored: ${fallbackReason}`
+        : "Walrus upload is not configured for files this large.",
+    );
   }
 
   const embeddedDataUrl = await fileToDataUrl(file);
