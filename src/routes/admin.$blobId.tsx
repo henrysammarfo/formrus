@@ -77,6 +77,12 @@ const priorities: { value: Priority; label: string }[] = [
   { value: "low", label: "Low" },
 ];
 
+function normalizeWallets(values: Array<string | undefined>) {
+  return [
+    ...new Set(values.map((value) => value?.trim().toLowerCase()).filter(Boolean)),
+  ] as string[];
+}
+
 function Admin() {
   const { blobId } = Route.useParams();
   const [form, setForm] = useState<FormSchema | null>(null);
@@ -91,28 +97,47 @@ function Admin() {
   const [newAdminAddress, setNewAdminAddress] = useState("");
   const [addingSealAdmin, setAddingSealAdmin] = useState(false);
   const [decryptingSeal, setDecryptingSeal] = useState(false);
+  const [queryImportHandled, setQueryImportHandled] = useState(false);
   const account = useCurrentAccount();
   const suiClient = useCurrentClient();
   const dAppKit = useDAppKit();
+  const adminWallets = useMemo(
+    () => normalizeWallets([form?.creatorAddress, ...(form?.adminAddresses || [])]),
+    [form?.adminAddresses, form?.creatorAddress],
+  );
+  const requiresAdminWallet = adminWallets.length > 0;
+  const connectedAdminAddress = account?.address.toLowerCase();
+  const isAuthorizedAdmin = !requiresAdminWallet
+    ? true
+    : Boolean(connectedAdminAddress && adminWallets.includes(connectedAdminAddress));
 
   const reload = async (currentForm = form) => {
-    if (!currentForm) return;
+    if (!currentForm || !isAuthorizedAdmin) return;
     setResponses(await getDisplayResponses(currentForm));
   };
 
   useEffect(() => {
-    getForm(blobId).then(async (loadedForm) => {
+    getForm(blobId).then((loadedForm) => {
       setForm(loadedForm);
       if (!loadedForm) {
         setResponses([]);
-        setLoading(false);
-        return;
       }
+      setQueryImportHandled(false);
+      setLoading(false);
+    });
+  }, [blobId]);
 
+  useEffect(() => {
+    if (!form || !isAuthorizedAdmin) {
+      setResponses([]);
+      return;
+    }
+
+    const loadAuthorizedResponses = async () => {
       const query =
         typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
-      const responseBlobId = query?.get("response")?.trim() || "";
-      const responseIndexBlobId = query?.get("index")?.trim() || "";
+      const responseBlobId = queryImportHandled ? "" : query?.get("response")?.trim() || "";
+      const responseIndexBlobId = queryImportHandled ? "" : query?.get("index")?.trim() || "";
       if (responseIndexBlobId) {
         try {
           const count = await importResponseIndexBlob(responseIndexBlobId, blobId);
@@ -133,10 +158,12 @@ function Admin() {
         window.history.replaceState(null, "", window.location.pathname);
       }
 
-      setResponses(await getDisplayResponses(loadedForm));
-      setLoading(false);
-    });
-  }, [blobId]);
+      setQueryImportHandled(true);
+      setResponses(await getDisplayResponses(form));
+    };
+
+    void loadAuthorizedResponses();
+  }, [blobId, form, isAuthorizedAdmin, queryImportHandled]);
 
   const stats: AdminStats | null = useMemo(
     () => (form ? computeStats(form, responses) : null),
@@ -337,6 +364,57 @@ function Admin() {
       </div>
     );
   if (!form) return <div className="py-20 text-center">Form not found.</div>;
+  if (!isAuthorizedAdmin) {
+    return (
+      <div className="mx-auto flex min-h-[70vh] max-w-xl items-center justify-center px-5 py-10">
+        <div className="w-full rounded-3xl border border-border bg-white p-6 text-center shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">Admin access</p>
+          <h1
+            className="mt-2 text-2xl font-semibold text-foreground"
+            style={{ fontFamily: "'Outfit', sans-serif" }}
+          >
+            Connect an authorized reviewer wallet
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+            This dashboard is restricted to the form creator and published reviewer wallet
+            addresses. The public form link remains open for respondents.
+          </p>
+          <div className="mt-5 flex justify-center">
+            <ConnectButton />
+          </div>
+          {account?.address && (
+            <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2 font-mono text-xs text-amber-900">
+              Connected wallet is not on this form's admin list: {account.address}
+            </p>
+          )}
+          {adminWallets.length > 0 && (
+            <details className="mt-5 rounded-2xl border border-border bg-secondary/40 p-3 text-left">
+              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Allowed wallets
+              </summary>
+              <div className="mt-3 space-y-2">
+                {adminWallets.map((address) => (
+                  <code
+                    key={address}
+                    className="block break-all rounded-lg bg-white px-3 py-2 font-mono text-[11px] text-foreground"
+                  >
+                    {address}
+                  </code>
+                ))}
+              </div>
+            </details>
+          )}
+          <Link
+            to="/form/$blobId"
+            params={{ blobId }}
+            className="mt-5 inline-flex rounded-full border border-border px-4 py-2 text-sm font-semibold hover:border-primary"
+          >
+            Open public form
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-5 py-10">
