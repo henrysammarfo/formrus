@@ -18,6 +18,7 @@ type WalrusJwtClaim = {
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 const walrusRateLimitBuckets = new Map<string, { count: number; resetAt: number }>();
+const DEFAULT_WALRUS_MAX_PUBLISH_BYTES = 50 * 1024 * 1024;
 
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
@@ -109,7 +110,7 @@ function isAllowedContentType(contentType: string, allowedRules: string[]): bool
 }
 
 async function readBoundedBody(request: Request, env: unknown): Promise<ArrayBuffer | Response> {
-  const maxBytes = readNumber(env, "WALRUS_MAX_PUBLISH_BYTES", 5 * 1024 * 1024);
+  const maxBytes = readNumber(env, "WALRUS_MAX_PUBLISH_BYTES", DEFAULT_WALRUS_MAX_PUBLISH_BYTES);
   const contentLength = Number(request.headers.get("content-length") || 0);
   if (contentLength > maxBytes) {
     return jsonResponse({ error: `Walrus publish body exceeds ${maxBytes} bytes` }, 413, {

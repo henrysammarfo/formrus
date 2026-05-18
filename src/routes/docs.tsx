@@ -215,7 +215,7 @@ function Docs() {
             exposed in browser JavaScript.
           </p>
           <p className="mt-3 text-sm leading-7 text-muted-foreground">
-            The default sponsor-budget profile caps each publish request at 25 MiB, generic files at
+            The default sponsor-budget profile caps each publish request at 50 MiB, generic files at
             3 MiB, videos at 20 MiB, and uploads at 2 files per response.
           </p>
         </DocSection>

@@ -230,7 +230,11 @@ async function putWalrusBlob(
     headers: { "content-type": contentType },
     body,
   });
-  if (!res.ok) throw new Error(`Walrus publish failed: ${res.status}`);
+  if (!res.ok) {
+    const errorBody = await res.text().catch(() => "");
+    const detail = errorBody ? ` - ${errorBody.slice(0, 240)}` : "";
+    throw new Error(`Walrus publish failed: ${res.status}${detail}`);
+  }
   return extractWalrusReceipt(await res.json());
 }
 

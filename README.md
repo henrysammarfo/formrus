@@ -73,7 +73,7 @@ If a hosted sponsor such as Nami is unavailable, run your own authenticated Walr
 WALRUS_PUBLISHER_URL=https://your-auth-publisher.example.com
 WALRUS_EPOCHS=5
 WALRUS_MAX_EPOCHS=5
-WALRUS_MAX_PUBLISH_BYTES=26214400
+WALRUS_MAX_PUBLISH_BYTES=52428800
 WALRUS_RATE_LIMIT_MAX_WRITES=5
 WALRUS_RATE_LIMIT_WINDOW_MS=60000
 WALRUS_ALLOWED_CONTENT_TYPES=application/json,image/*,video/*,application/pdf,text/plain,text/csv
@@ -84,7 +84,7 @@ WALRUS_PUBLISHER_SEND_OBJECT_TO=0xYOUR_SPONSOR_WALLET_ADDRESS
 
 The Worker signs a short-lived HS256 JWT for each upload. The publisher must be configured with the same JWT decode secret. Keep the publisher wallet funded with SUI for gas and WAL for storage. Keep media caps low until the sponsor budget is larger.
 
-The default production budget profile is intentionally conservative: 5 MiB server hard cap, 3 MiB generic files, 5 MiB videos, and 2 uploads per response. That keeps normal text-only responses cheap enough for dozens of submissions while preventing a single large video from burning the sponsor wallet. Creators can also disable repeat submissions and enable local draft resume so respondents can recover unfinished text/select/rating answers after closing the tab.
+The default production budget profile is intentionally conservative for normal forms while still allowing demo media: 50 MiB server hard cap, 3 MiB generic files, 20 MiB videos, and 2 uploads per response. That keeps normal text-only responses cheap enough for dozens of submissions while preventing repeated large videos from burning the sponsor wallet. Creators can also disable repeat submissions and enable local draft resume so respondents can recover unfinished text/select/rating answers after closing the tab.
 
 Current production publisher shape:
 
