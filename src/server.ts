@@ -22,6 +22,12 @@ type WalrusPublishBody = {
   maxSize: number;
 };
 
+type WalrusUploadTokenRequest = {
+  contentType?: string;
+  epochs?: number;
+  size?: number;
+};
+
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 const walrusRateLimitBuckets = new Map<string, { count: number; resetAt: number }>();
 const DEFAULT_WALRUS_MAX_PUBLISH_BYTES = 50 * 1024 * 1024;
@@ -263,6 +269,84 @@ async function handleWalrusPublisherProxy(request: Request, env: unknown): Promi
   });
 }
 
+async function handleWalrusUploadToken(request: Request, env: unknown): Promise<Response> {
+  if (request.method !== "POST") {
+    return jsonResponse({ error: "Method not allowed" }, 405);
+  }
+
+  const publisherUrl = readSecret(env, "WALRUS_PUBLISHER_URL")?.replace(/\/$/, "");
+  if (!publisherUrl) {
+    return jsonResponse({ error: "WALRUS_PUBLISHER_URL is not configured" }, 503);
+  }
+
+  const rateLimitResponse = enforceWalrusRateLimit(request, env);
+  if (rateLimitResponse) return rateLimitResponse;
+
+  let payload: WalrusUploadTokenRequest;
+  try {
+    payload = (await request.json()) as WalrusUploadTokenRequest;
+  } catch {
+    return jsonResponse({ error: "Invalid upload token request" }, 400);
+  }
+
+  const size = Number(payload.size || 0);
+  const maxBytes = readNumber(env, "WALRUS_MAX_PUBLISH_BYTES", DEFAULT_WALRUS_MAX_PUBLISH_BYTES);
+  if (!Number.isFinite(size) || size <= 0) {
+    return jsonResponse({ error: "Upload size is required" }, 400);
+  }
+  if (size > maxBytes) {
+    return jsonResponse({ error: `Walrus publish body exceeds ${maxBytes} bytes` }, 413, {
+      "cache-control": "no-store",
+    });
+  }
+
+  const contentType = payload.contentType || "application/octet-stream";
+  const allowedContentTypes = (
+    readSecret(env, "WALRUS_ALLOWED_CONTENT_TYPES") ||
+    "application/json,image/*,video/*,application/pdf,text/plain,text/csv"
+  )
+    .split(",")
+    .map((rule) => rule.trim())
+    .filter(Boolean);
+  if (!isAllowedContentType(contentType, allowedContentTypes)) {
+    return jsonResponse(
+      { error: `Content type ${contentType} is not allowed for Walrus publishing` },
+      415,
+      { "cache-control": "no-store" },
+    );
+  }
+
+  const configuredEpochs = readSecret(env, "WALRUS_EPOCHS") || "5";
+  const maxEpochs = readNumber(env, "WALRUS_MAX_EPOCHS", Number(configuredEpochs) || 5);
+  const requestedEpochs = Number(payload.epochs || configuredEpochs);
+  const epochs = clampNumber(Number.isFinite(requestedEpochs) ? requestedEpochs : 1, 1, maxEpochs);
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  const jwtTtlSeconds = readNumber(env, "WALRUS_PUBLISHER_JWT_EXP_SECONDS", 60);
+  const expiresAt = nowSeconds + jwtTtlSeconds;
+  const sendObjectTo = readSecret(env, "WALRUS_PUBLISHER_SEND_OBJECT_TO");
+  const jwt = await signWalrusPublisherJwt(env, {
+    exp: expiresAt,
+    iat: nowSeconds,
+    jti: createJti(),
+    epochs,
+    max_size: size,
+    ...(sendObjectTo ? { send_object_to: sendObjectTo } : {}),
+  });
+  if (!jwt) {
+    return jsonResponse({ error: "WALRUS_PUBLISHER_JWT_SECRET is not configured" }, 503);
+  }
+
+  return jsonResponse(
+    {
+      authorization: `Bearer ${jwt}`,
+      expiresAt,
+      uploadUrl: buildPublisherUrl(publisherUrl, epochs, sendObjectTo),
+    },
+    200,
+    { "cache-control": "no-store" },
+  );
+}
+
 function isCatastrophicSsrErrorBody(body: string, responseStatus: number): boolean {
   let payload: unknown;
   try {
@@ -308,6 +392,10 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const url = new URL(request.url);
+      if (url.pathname === "/api/walrus/upload-token") {
+        return await handleWalrusUploadToken(request, env);
+      }
+
       if (url.pathname === "/api/walrus/blobs") {
         return await handleWalrusPublisherProxy(request, env);
       }

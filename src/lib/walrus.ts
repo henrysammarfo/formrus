@@ -49,6 +49,12 @@ type ResponsePayload = {
   encryptionProvider?: FormResponse["encryptionProvider"];
 };
 
+type DirectWalrusUploadToken = {
+  authorization: string;
+  expiresAt: number;
+  uploadUrl: string;
+};
+
 export type WalrusStorageStatus = {
   mode: "walrus" | "local";
   label: string;
@@ -221,6 +227,11 @@ async function putWalrusBlob(
   const { publisherUrl, epochs } = getWalrusConfig();
   if (!publisherUrl) return null;
 
+  if (publisherUrl.startsWith("/api/") && typeof Blob !== "undefined" && body instanceof Blob) {
+    const directReceipt = await putDirectWalrusBlob(body, contentType, epochs);
+    if (directReceipt) return directReceipt;
+  }
+
   const endpoint = publisherUrl.startsWith("/api/")
     ? `${publisherUrl}?epochs=${encodeURIComponent(epochs)}`
     : `${publisherUrl}/v1/blobs?epochs=${encodeURIComponent(epochs)}`;
@@ -236,6 +247,44 @@ async function putWalrusBlob(
     throw new Error(`Walrus publish failed: ${res.status}${detail}`);
   }
   return extractWalrusReceipt(await res.json());
+}
+
+async function putDirectWalrusBlob(
+  body: Blob,
+  contentType: string,
+  epochs: string,
+): Promise<BlobReceipt | null> {
+  const tokenResponse = await fetch("/api/walrus/upload-token", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      contentType,
+      epochs: Number(epochs),
+      size: body.size,
+    }),
+  });
+  if (!tokenResponse.ok) {
+    const errorBody = await tokenResponse.text().catch(() => "");
+    const detail = errorBody ? ` - ${errorBody.slice(0, 240)}` : "";
+    throw new Error(`Walrus upload token failed: ${tokenResponse.status}${detail}`);
+  }
+
+  const token = (await tokenResponse.json()) as DirectWalrusUploadToken;
+  const uploadResponse = await fetch(token.uploadUrl, {
+    method: "PUT",
+    headers: {
+      authorization: token.authorization,
+      "content-type": contentType,
+    },
+    body,
+  });
+  if (!uploadResponse.ok) {
+    const errorBody = await uploadResponse.text().catch(() => "");
+    const detail = errorBody ? ` - ${errorBody.slice(0, 240)}` : "";
+    throw new Error(`Walrus direct upload failed: ${uploadResponse.status}${detail}`);
+  }
+
+  return extractWalrusReceipt(await uploadResponse.json());
 }
 
 function readLocalBlob(blobId: string): StoredBlob | null {
