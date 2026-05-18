@@ -16,6 +16,12 @@ type WalrusJwtClaim = {
   send_object_to?: string;
 };
 
+type WalrusPublishBody = {
+  body: ReadableStream<Uint8Array>;
+  contentLength: number;
+  maxSize: number;
+};
+
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 const walrusRateLimitBuckets = new Map<string, { count: number; resetAt: number }>();
 const DEFAULT_WALRUS_MAX_PUBLISH_BYTES = 50 * 1024 * 1024;
@@ -109,7 +115,7 @@ function isAllowedContentType(contentType: string, allowedRules: string[]): bool
   });
 }
 
-async function readBoundedBody(request: Request, env: unknown): Promise<ArrayBuffer | Response> {
+function getBoundedPublishBody(request: Request, env: unknown): WalrusPublishBody | Response {
   const maxBytes = readNumber(env, "WALRUS_MAX_PUBLISH_BYTES", DEFAULT_WALRUS_MAX_PUBLISH_BYTES);
   const contentLength = Number(request.headers.get("content-length") || 0);
   if (contentLength > maxBytes) {
@@ -118,13 +124,17 @@ async function readBoundedBody(request: Request, env: unknown): Promise<ArrayBuf
     });
   }
 
-  const body = await request.arrayBuffer();
-  if (body.byteLength > maxBytes) {
-    return jsonResponse({ error: `Walrus publish body exceeds ${maxBytes} bytes` }, 413, {
+  if (!request.body) {
+    return jsonResponse({ error: "Walrus publish request body is empty" }, 400, {
       "cache-control": "no-store",
     });
   }
-  return body;
+
+  return {
+    body: request.body,
+    contentLength,
+    maxSize: contentLength > 0 ? contentLength : maxBytes,
+  };
 }
 
 function base64UrlEncode(input: string | ArrayBuffer): string {
@@ -219,8 +229,8 @@ async function handleWalrusPublisherProxy(request: Request, env: unknown): Promi
     );
   }
 
-  const boundedBody = await readBoundedBody(request, env);
-  if (boundedBody instanceof Response) return boundedBody;
+  const publishBody = getBoundedPublishBody(request, env);
+  if (publishBody instanceof Response) return publishBody;
 
   const nowSeconds = Math.floor(Date.now() / 1000);
   const jwtTtlSeconds = readNumber(env, "WALRUS_PUBLISHER_JWT_EXP_SECONDS", 60);
@@ -230,16 +240,17 @@ async function handleWalrusPublisherProxy(request: Request, env: unknown): Promi
     iat: nowSeconds,
     jti: createJti(),
     epochs,
-    max_size: boundedBody.byteLength,
+    max_size: publishBody.maxSize,
     ...(sendObjectTo ? { send_object_to: sendObjectTo } : {}),
   });
   const headers: HeadersInit = { "content-type": contentType };
+  if (publishBody.contentLength > 0) headers["content-length"] = String(publishBody.contentLength);
   if (jwt) headers.authorization = `Bearer ${jwt}`;
 
   const upstream = await fetch(buildPublisherUrl(publisherUrl, epochs, sendObjectTo), {
     method: "PUT",
     headers,
-    body: boundedBody,
+    body: publishBody.body,
   });
 
   return new Response(upstream.body, {
