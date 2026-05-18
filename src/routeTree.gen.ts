@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TemplatesRouteImport } from './routes/templates'
 import { Route as OnePagerRouteImport } from './routes/one-pager'
 import { Route as MyFormsRouteImport } from './routes/my-forms'
 import { Route as DocsRouteImport } from './routes/docs'
@@ -17,6 +18,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as FormBlobIdRouteImport } from './routes/form.$blobId'
 import { Route as AdminBlobIdRouteImport } from './routes/admin.$blobId'
 
+const TemplatesRoute = TemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnePagerRoute = OnePagerRouteImport.update({
   id: '/one-pager',
   path: '/one-pager',
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsRoute
   '/my-forms': typeof MyFormsRoute
   '/one-pager': typeof OnePagerRoute
+  '/templates': typeof TemplatesRoute
   '/admin/$blobId': typeof AdminBlobIdRoute
   '/form/$blobId': typeof FormBlobIdRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsRoute
   '/my-forms': typeof MyFormsRoute
   '/one-pager': typeof OnePagerRoute
+  '/templates': typeof TemplatesRoute
   '/admin/$blobId': typeof AdminBlobIdRoute
   '/form/$blobId': typeof FormBlobIdRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/docs': typeof DocsRoute
   '/my-forms': typeof MyFormsRoute
   '/one-pager': typeof OnePagerRoute
+  '/templates': typeof TemplatesRoute
   '/admin/$blobId': typeof AdminBlobIdRoute
   '/form/$blobId': typeof FormBlobIdRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/my-forms'
     | '/one-pager'
+    | '/templates'
     | '/admin/$blobId'
     | '/form/$blobId'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/my-forms'
     | '/one-pager'
+    | '/templates'
     | '/admin/$blobId'
     | '/form/$blobId'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/my-forms'
     | '/one-pager'
+    | '/templates'
     | '/admin/$blobId'
     | '/form/$blobId'
   fileRoutesById: FileRoutesById
@@ -117,12 +129,20 @@ export interface RootRouteChildren {
   DocsRoute: typeof DocsRoute
   MyFormsRoute: typeof MyFormsRoute
   OnePagerRoute: typeof OnePagerRoute
+  TemplatesRoute: typeof TemplatesRoute
   AdminBlobIdRoute: typeof AdminBlobIdRoute
   FormBlobIdRoute: typeof FormBlobIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/templates': {
+      id: '/templates'
+      path: '/templates'
+      fullPath: '/templates'
+      preLoaderRoute: typeof TemplatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/one-pager': {
       id: '/one-pager'
       path: '/one-pager'
@@ -181,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   DocsRoute: DocsRoute,
   MyFormsRoute: MyFormsRoute,
   OnePagerRoute: OnePagerRoute,
+  TemplatesRoute: TemplatesRoute,
   AdminBlobIdRoute: AdminBlobIdRoute,
   FormBlobIdRoute: FormBlobIdRoute,
 }

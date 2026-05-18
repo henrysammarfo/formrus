@@ -35,6 +35,7 @@ export interface AttachmentValue extends BlobReceipt {
 
 export type EncryptionProvider = "seal" | "formrus-rsa";
 export type SubmitterMode = "public" | "wallet_optional" | "wallet_required";
+export type AdminRole = "owner" | "admin" | "reviewer";
 
 export interface EncryptionEnvelope {
   __formrusEncrypted: true;
@@ -137,6 +138,7 @@ export interface FormSchema {
   publishedFromDraftId?: string;
   publishedAt?: string;
   adminAddresses?: string[];
+  reviewerAddresses?: string[];
   accessControl?: AccessControl;
   creatorManifestBlobId?: string;
   responseIndexBlobId?: string;
@@ -176,6 +178,7 @@ export interface FormDraft {
   branding?: FormBranding;
   publishedBlobId?: string;
   adminAddresses?: string[];
+  reviewerAddresses?: string[];
   accessControl?: AccessControl;
   creatorManifestBlobId?: string;
   responseIndexBlobId?: string;

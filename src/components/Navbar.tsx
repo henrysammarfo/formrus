@@ -17,6 +17,13 @@ export function Navbar() {
             Create Form
           </Link>
           <Link
+            to="/templates"
+            activeProps={{ className: "text-foreground" }}
+            className="hover:text-foreground transition-colors"
+          >
+            Templates
+          </Link>
+          <Link
             to="/my-forms"
             activeProps={{ className: "text-foreground" }}
             className="hover:text-foreground transition-colors"

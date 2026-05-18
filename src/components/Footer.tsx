@@ -102,6 +102,7 @@ export function Footer() {
               <div className="footer-col">
                 <h4 className="footer-col-title">Navigation</h4>
                 <Link to="/">How it works</Link>
+                <Link to="/templates">Templates</Link>
                 <Link to="/builder">Features</Link>
                 <Link to="/my-forms">My Forms</Link>
                 <Link to="/docs">Docs</Link>

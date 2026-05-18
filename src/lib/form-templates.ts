@@ -17,6 +17,7 @@ export type FormTemplate = {
   responsePolicy?: ResponsePolicy;
   fields: FormField[];
   adminAddresses: string[];
+  reviewerAddresses?: string[];
 };
 
 function bundledImage(

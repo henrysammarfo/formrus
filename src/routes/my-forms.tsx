@@ -129,6 +129,7 @@ function MyForms() {
       formVersion: nextVersion,
       publishedBlobId: form.blobId,
       adminAddresses: form.adminAddresses,
+      reviewerAddresses: form.reviewerAddresses,
       accessControl: form.accessControl,
       creatorManifestBlobId: form.creatorManifestBlobId,
       responseIndexBlobId: form.responseIndexBlobId,

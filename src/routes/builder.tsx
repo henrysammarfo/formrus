@@ -117,6 +117,11 @@ function Builder() {
       ? undefined
       : new URLSearchParams(window.location.search).get("draft") || undefined,
   );
+  const [requestedTemplateId] = useState(() =>
+    typeof window === "undefined"
+      ? undefined
+      : new URLSearchParams(window.location.search).get("template") || undefined,
+  );
   const [draftId, setDraftId] = useState(() => makeBlobId().slice(0, 12));
   const [title, setTitle] = useState("Untitled Form");
   const [description, setDescription] = useState("");
@@ -140,6 +145,7 @@ function Builder() {
     successMessage: "Your response has been stored.",
   });
   const [adminAddresses, setAdminAddresses] = useState<string[]>([WALRUS_SESSIONS_REVIEW_ADMIN]);
+  const [reviewerAddresses, setReviewerAddresses] = useState<string[]>([]);
   const [formVersion, setFormVersion] = useState(1);
   const [drafts, setDrafts] = useState<FormDraft[]>([]);
   const [accessControl, setAccessControl] = useState<FormDraft["accessControl"]>(() => ({
@@ -182,13 +188,26 @@ function Builder() {
   };
   const removeField = (id: string) => setFields((prev) => prev.filter((f) => f.id !== id));
   const adminAddressText = adminAddresses.join("\n");
+  const reviewerAddressText = reviewerAddresses.join("\n");
+  const parseAddressList = (value: string) => [
+    ...new Set(
+      value
+        .split(/\s|,|;/)
+        .map((address) => address.trim())
+        .filter(Boolean),
+    ),
+  ];
   const updateAdminAddresses = (value: string) => {
-    const next = value
-      .split(/\s|,|;/)
-      .map((address) => address.trim())
-      .filter(Boolean);
-    setAdminAddresses([...new Set(next)]);
+    setAdminAddresses(parseAddressList(value));
   };
+  const updateReviewerAddresses = (value: string) => {
+    setReviewerAddresses(parseAddressList(value));
+  };
+  const accessWallets = [
+    ...new Set(
+      [...adminAddresses, ...reviewerAddresses].map((address) => address.trim()).filter(Boolean),
+    ),
+  ];
   const updateBranding = (patch: Partial<FormBranding>) =>
     setBranding((prev) => ({ ...prev, ...patch }));
   const applyTemplate = (template: FormTemplate) => {
@@ -210,6 +229,7 @@ function Builder() {
     );
     setFields(template.fields);
     setAdminAddresses(template.adminAddresses);
+    setReviewerAddresses(template.reviewerAddresses || []);
     setPublished(null);
     toast.success(`${template.name} loaded`);
   };
@@ -267,6 +287,7 @@ function Builder() {
       formVersion: versionOverride,
       publishedBlobId,
       adminAddresses,
+      reviewerAddresses,
       accessControl: isPrivate ? privateAccess : undefined,
     });
     setDrafts(await listDrafts());
@@ -292,6 +313,7 @@ function Builder() {
     setAdminAddresses(
       draft.adminAddresses?.length ? draft.adminAddresses : [WALRUS_SESSIONS_REVIEW_ADMIN],
     );
+    setReviewerAddresses(draft.reviewerAddresses || []);
     setFormVersion(draft.formVersion || 1);
     setAccessControl(draft.accessControl || { provider: "formrus-rsa", keyId: makeAccessKeyId() });
     setPublished(null);
@@ -306,6 +328,12 @@ function Builder() {
       if (requested) loadDraft(requested);
     });
   }, [requestedDraftId]);
+
+  useEffect(() => {
+    if (!requestedTemplateId || requestedDraftId) return;
+    const requested = FORM_TEMPLATES.find((template) => template.id === requestedTemplateId);
+    if (requested) applyTemplate(requested);
+  }, [requestedDraftId, requestedTemplateId]);
 
   const removeDraft = async (id: string) => {
     await deleteDraft(id);
@@ -331,7 +359,7 @@ function Builder() {
           toast.error("Connect your Sui wallet to register private form access before publishing");
           return;
         }
-        finalAccess = await registerSealFormAccess(privateAccess, adminAddresses, {
+        finalAccess = await registerSealFormAccess(privateAccess, accessWallets, {
           address: account.address,
           dAppKit,
         });
@@ -351,6 +379,7 @@ function Builder() {
         draftId,
         publishedFromDraftId: draftId,
         adminAddresses,
+        reviewerAddresses,
         accessControl: finalAccess,
       });
       const creatorManifestBlobId = account?.address
@@ -440,7 +469,7 @@ function Builder() {
               onChange={(e) => setDescription(e.target.value)}
             />
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Reviewer wallet addresses
+              Admin wallet addresses
             </label>
             <textarea
               rows={3}
@@ -450,8 +479,22 @@ function Builder() {
               placeholder="0x..."
             />
             <p className="-mt-3 mb-4 text-xs leading-5 text-muted-foreground">
-              Add your own team wallets here. For the Walrus Session template, the required review
-              address is included automatically.
+              Admins can review, prioritize, import responses, export data, and add notes. The
+              creator wallet remains the super admin.
+            </p>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Reviewer-only wallet addresses
+            </label>
+            <textarea
+              rows={2}
+              className="mb-4 w-full rounded-lg border border-border px-3 py-2.5 font-mono text-xs outline-none focus:border-primary"
+              value={reviewerAddressText}
+              onChange={(e) => updateReviewerAddresses(e.target.value)}
+              placeholder="0x..."
+            />
+            <p className="-mt-3 mb-4 text-xs leading-5 text-muted-foreground">
+              Reviewers can open the dashboard and mark responses reviewed, but they cannot export,
+              import, delete, prioritize, or edit internal notes.
             </p>
             <div className="mb-4 rounded-xl border border-border bg-secondary/50 p-3">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
@@ -813,6 +856,7 @@ function Builder() {
                   successMessage: "Your response has been stored.",
                 });
                 setAdminAddresses([WALRUS_SESSIONS_REVIEW_ADMIN]);
+                setReviewerAddresses([]);
                 setDraftId(makeBlobId().slice(0, 12));
                 setAccessControl({ provider: "formrus-rsa", keyId: makeAccessKeyId() });
                 setFormVersion(1);

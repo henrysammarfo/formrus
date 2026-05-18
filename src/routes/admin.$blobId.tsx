@@ -20,7 +20,7 @@ import {
   Trash2,
   UploadCloud,
 } from "lucide-react";
-import type { AdminStats, EncryptionEnvelope, FormResponse, FormSchema } from "@/types";
+import type { AdminRole, AdminStats, EncryptionEnvelope, FormResponse, FormSchema } from "@/types";
 import {
   addSealFormAdmin,
   decryptSealResponseEnvelope,
@@ -83,6 +83,20 @@ function normalizeWallets(values: Array<string | undefined>) {
   ] as string[];
 }
 
+function getAdminRole(form: FormSchema | null, address?: string): AdminRole | null {
+  if (!form) return null;
+  const connected = address?.toLowerCase();
+  const ownerAddress = form.creatorAddress?.trim().toLowerCase();
+  const adminAddresses = normalizeWallets(form.adminAddresses || []);
+  const reviewerAddresses = normalizeWallets(form.reviewerAddresses || []);
+  if (!ownerAddress && !adminAddresses.length && !reviewerAddresses.length) return "owner";
+  if (!connected) return null;
+  if (ownerAddress && connected === ownerAddress) return "owner";
+  if (adminAddresses.includes(connected)) return "admin";
+  if (reviewerAddresses.includes(connected)) return "reviewer";
+  return null;
+}
+
 function Admin() {
   const { blobId } = Route.useParams();
   const [form, setForm] = useState<FormSchema | null>(null);
@@ -101,15 +115,21 @@ function Admin() {
   const account = useCurrentAccount();
   const suiClient = useCurrentClient();
   const dAppKit = useDAppKit();
-  const adminWallets = useMemo(
-    () => normalizeWallets([form?.creatorAddress, ...(form?.adminAddresses || [])]),
-    [form?.adminAddresses, form?.creatorAddress],
+  const roleWallets = useMemo(
+    () =>
+      normalizeWallets([
+        form?.creatorAddress,
+        ...(form?.adminAddresses || []),
+        ...(form?.reviewerAddresses || []),
+      ]),
+    [form?.adminAddresses, form?.creatorAddress, form?.reviewerAddresses],
   );
-  const requiresAdminWallet = adminWallets.length > 0;
-  const connectedAdminAddress = account?.address.toLowerCase();
-  const isAuthorizedAdmin = !requiresAdminWallet
-    ? true
-    : Boolean(connectedAdminAddress && adminWallets.includes(connectedAdminAddress));
+  const adminRole = getAdminRole(form, account?.address);
+  const isAuthorizedAdmin = Boolean(adminRole);
+  const canManageAccess = adminRole === "owner";
+  const canManageResponses = adminRole === "owner" || adminRole === "admin";
+  const canExport = canManageResponses;
+  const canImport = canManageResponses;
 
   const reload = async (currentForm = form) => {
     if (!currentForm || !isAuthorizedAdmin) return;
@@ -225,22 +245,22 @@ function Admin() {
   };
 
   const exportAll = () => {
-    if (!form) return;
+    if (!form || !canExport) return;
     downloadCsv(`${form.title.replace(/\s+/g, "_")}.csv`, exportCsv(form, responses));
   };
 
   const exportAllJson = () => {
-    if (!form) return;
+    if (!form || !canExport) return;
     downloadJson(`${form.title.replace(/\s+/g, "_")}.json`, exportJson(form, responses));
   };
 
   const exportAllExcel = () => {
-    if (!form) return;
+    if (!form || !canExport) return;
     downloadExcel(`${form.title.replace(/\s+/g, "_")}.xls`, exportExcelWorkbook(form, responses));
   };
 
   const exportSelectedJson = () => {
-    if (!form) return;
+    if (!form || !canExport) return;
     downloadJson(
       "selected.json",
       exportJson(
@@ -251,7 +271,7 @@ function Admin() {
   };
 
   const exportSelectedExcel = () => {
-    if (!form) return;
+    if (!form || !canExport) return;
     downloadExcel(
       "selected.xls",
       exportExcelWorkbook(
@@ -271,6 +291,10 @@ function Admin() {
   };
 
   const handleImport = async () => {
+    if (!canImport) {
+      toast.error("Reviewer-only wallets cannot import response blobs");
+      return;
+    }
     const id = importId.trim();
     if (!id) return;
     try {
@@ -335,6 +359,10 @@ function Admin() {
   };
 
   const handleAddSealAdmin = async () => {
+    if (!canManageAccess) {
+      toast.error("Only the form owner can add admins");
+      return;
+    }
     if (!form || !account) {
       toast.error("Connect the creator wallet first");
       return;
@@ -373,27 +401,27 @@ function Admin() {
             className="mt-2 text-2xl font-semibold text-foreground"
             style={{ fontFamily: "'Outfit', sans-serif" }}
           >
-            Connect an authorized reviewer wallet
+            Connect an authorized admin or reviewer wallet
           </h1>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            This dashboard is restricted to the form creator and published reviewer wallet
-            addresses. The public form link remains open for respondents.
+            This dashboard is restricted to the form owner, published admins, and reviewer-only
+            wallets. The public form link remains open for respondents.
           </p>
           <div className="mt-5 flex justify-center">
             <ConnectButton />
           </div>
           {account?.address && (
             <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2 font-mono text-xs text-amber-900">
-              Connected wallet is not on this form's admin list: {account.address}
+              Connected wallet is not on this form's access list: {account.address}
             </p>
           )}
-          {adminWallets.length > 0 && (
+          {roleWallets.length > 0 && (
             <details className="mt-5 rounded-2xl border border-border bg-secondary/40 p-3 text-left">
               <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Allowed wallets
               </summary>
               <div className="mt-3 space-y-2">
-                {adminWallets.map((address) => (
+                {roleWallets.map((address) => (
                   <code
                     key={address}
                     className="block break-all rounded-lg bg-white px-3 py-2 font-mono text-[11px] text-foreground"
@@ -433,6 +461,11 @@ function Admin() {
             <p className="mt-1 font-mono text-xs text-muted-foreground">
               Form ID: {truncateBlob(blobId)}
             </p>
+            {adminRole && (
+              <span className="mt-3 inline-flex rounded-full bg-secondary px-3 py-1 text-xs font-semibold capitalize text-muted-foreground">
+                {adminRole === "owner" ? "Super admin" : adminRole}
+              </span>
+            )}
             {form.isPrivate && (
               <p className="mt-2 text-xs font-semibold text-primary">
                 {hasPrivateDecryptKey(form.accessControl)
@@ -448,24 +481,28 @@ function Admin() {
             >
               <Copy size={14} /> Copy form link
             </button>
-            <button
-              onClick={exportAll}
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-            >
-              <Download size={14} /> Export CSV
-            </button>
-            <button
-              onClick={exportAllJson}
-              className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold hover:border-primary"
-            >
-              <Download size={14} /> Export JSON
-            </button>
-            <button
-              onClick={exportAllExcel}
-              className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold hover:border-primary"
-            >
-              <Download size={14} /> Export Excel
-            </button>
+            {canExport && (
+              <>
+                <button
+                  onClick={exportAll}
+                  className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                >
+                  <Download size={14} /> Export CSV
+                </button>
+                <button
+                  onClick={exportAllJson}
+                  className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold hover:border-primary"
+                >
+                  <Download size={14} /> Export JSON
+                </button>
+                <button
+                  onClick={exportAllExcel}
+                  className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold hover:border-primary"
+                >
+                  <Download size={14} /> Export Excel
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -496,21 +533,17 @@ function Admin() {
         ))}
       </div>
 
-      {form.adminAddresses?.length ? (
+      {form.creatorAddress || form.adminAddresses?.length || form.reviewerAddresses?.length ? (
         <details className="mb-4 rounded-2xl border border-border bg-white p-4">
           <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Reviewer wallet addresses
+            Role wallet addresses
           </summary>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {form.adminAddresses.map((address) => (
-              <code
-                key={address}
-                className="rounded-full bg-secondary px-3 py-1.5 font-mono text-[11px] text-foreground"
-              >
-                {address}
-              </code>
-            ))}
-          </div>
+          <RoleAddressGroup
+            label="Super admin"
+            addresses={form.creatorAddress ? [form.creatorAddress] : []}
+          />
+          <RoleAddressGroup label="Admins" addresses={form.adminAddresses || []} />
+          <RoleAddressGroup label="Reviewers" addresses={form.reviewerAddresses || []} />
         </details>
       ) : null}
 
@@ -549,7 +582,7 @@ function Admin() {
               </button>
             </div>
           </div>
-          {sealStatus.configured && (
+          {sealStatus.configured && canManageAccess && (
             <div className="mt-4 border-t border-border pt-4">
               <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Add Seal admin
@@ -613,44 +646,52 @@ function Admin() {
           <option value="priority">Priority</option>
           <option value="star">Star Rating</option>
         </select>
-        <input
-          value={importId}
-          onChange={(event) => setImportId(event.target.value)}
-          placeholder="Import response or index blob ID"
-          className="min-w-[220px] rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
-        />
-        <button
-          type="button"
-          onClick={handleImport}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-white px-3 py-2.5 text-sm font-semibold hover:border-primary"
-        >
-          <UploadCloud size={14} /> Import
-        </button>
+        {canImport && (
+          <>
+            <input
+              value={importId}
+              onChange={(event) => setImportId(event.target.value)}
+              placeholder="Import response or index blob ID"
+              className="min-w-[220px] rounded-xl border border-border px-3 py-2.5 text-sm outline-none focus:border-primary"
+            />
+            <button
+              type="button"
+              onClick={handleImport}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-white px-3 py-2.5 text-sm font-semibold hover:border-primary"
+            >
+              <UploadCloud size={14} /> Import
+            </button>
+          </>
+        )}
       </div>
 
       {selected.size > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-2 rounded-2xl border border-primary/30 bg-accent p-3 text-sm">
           <span className="font-semibold text-primary">{selected.size} selected</span>
-          <button
-            onClick={async () => {
-              bulkUpdate([...selected], { starred: true });
-              await reload();
-              setSelected(new Set());
-            }}
-            className="rounded-full border border-border bg-white px-3 py-1 text-xs font-semibold hover:border-primary"
-          >
-            Star
-          </button>
-          <button
-            onClick={async () => {
-              bulkUpdate([...selected], { priority: "high" });
-              await reload();
-              setSelected(new Set());
-            }}
-            className="rounded-full border border-border bg-white px-3 py-1 text-xs font-semibold hover:border-primary"
-          >
-            Mark high priority
-          </button>
+          {canManageResponses && (
+            <>
+              <button
+                onClick={async () => {
+                  bulkUpdate([...selected], { starred: true });
+                  await reload();
+                  setSelected(new Set());
+                }}
+                className="rounded-full border border-border bg-white px-3 py-1 text-xs font-semibold hover:border-primary"
+              >
+                Star
+              </button>
+              <button
+                onClick={async () => {
+                  bulkUpdate([...selected], { priority: "high" });
+                  await reload();
+                  setSelected(new Set());
+                }}
+                className="rounded-full border border-border bg-white px-3 py-1 text-xs font-semibold hover:border-primary"
+              >
+                Mark high priority
+              </button>
+            </>
+          )}
           <button
             onClick={async () => {
               bulkUpdate([...selected], { reviewed: true });
@@ -661,42 +702,48 @@ function Admin() {
           >
             Mark reviewed
           </button>
-          <button
-            onClick={() => {
-              downloadCsv(
-                "selected.csv",
-                exportCsv(
-                  form,
-                  responses.filter((response) => selected.has(response.id)),
-                ),
-              );
-            }}
-            className="rounded-full border border-border bg-white px-3 py-1 text-xs font-semibold hover:border-primary"
-          >
-            Export selected
-          </button>
-          <button
-            onClick={exportSelectedJson}
-            className="rounded-full border border-border bg-white px-3 py-1 text-xs font-semibold hover:border-primary"
-          >
-            Export selected JSON
-          </button>
-          <button
-            onClick={exportSelectedExcel}
-            className="rounded-full border border-border bg-white px-3 py-1 text-xs font-semibold hover:border-primary"
-          >
-            Export selected Excel
-          </button>
-          <button
-            onClick={async () => {
-              bulkDelete([...selected]);
-              await reload();
-              setSelected(new Set());
-            }}
-            className="rounded-full border border-destructive bg-white px-3 py-1 text-xs font-semibold text-destructive hover:bg-destructive hover:text-destructive-foreground"
-          >
-            Delete
-          </button>
+          {canExport && (
+            <>
+              <button
+                onClick={() => {
+                  downloadCsv(
+                    "selected.csv",
+                    exportCsv(
+                      form,
+                      responses.filter((response) => selected.has(response.id)),
+                    ),
+                  );
+                }}
+                className="rounded-full border border-border bg-white px-3 py-1 text-xs font-semibold hover:border-primary"
+              >
+                Export selected
+              </button>
+              <button
+                onClick={exportSelectedJson}
+                className="rounded-full border border-border bg-white px-3 py-1 text-xs font-semibold hover:border-primary"
+              >
+                Export selected JSON
+              </button>
+              <button
+                onClick={exportSelectedExcel}
+                className="rounded-full border border-border bg-white px-3 py-1 text-xs font-semibold hover:border-primary"
+              >
+                Export selected Excel
+              </button>
+            </>
+          )}
+          {canManageResponses && (
+            <button
+              onClick={async () => {
+                bulkDelete([...selected]);
+                await reload();
+                setSelected(new Set());
+              }}
+              className="rounded-full border border-destructive bg-white px-3 py-1 text-xs font-semibold text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            >
+              Delete
+            </button>
+          )}
         </div>
       )}
 
@@ -720,6 +767,7 @@ function Admin() {
             onSelect={() => toggleSelect(response.id)}
             onExpand={() => setExpanded(expanded === response.id ? null : response.id)}
             onReload={reload}
+            canManageResponses={canManageResponses}
           />
         ))}
       </div>
@@ -736,6 +784,7 @@ function ResponseCard({
   onSelect,
   onExpand,
   onReload,
+  canManageResponses,
 }: {
   response: FormResponse;
   index: number;
@@ -745,6 +794,7 @@ function ResponseCard({
   onSelect: () => void;
   onExpand: () => void;
   onReload: () => Promise<void>;
+  canManageResponses: boolean;
 }) {
   const previewCols = cols.slice(0, 4);
 
@@ -817,16 +867,18 @@ function ResponseCard({
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <button
-            onClick={async () => {
-              updateResponse(response.id, { starred: !response.starred });
-              await onReload();
-            }}
-            className={`rounded-lg p-2 hover:bg-secondary ${response.starred ? "text-primary" : "text-muted-foreground"}`}
-            title="Star"
-          >
-            <Star size={16} className={response.starred ? "fill-primary" : ""} />
-          </button>
+          {canManageResponses && (
+            <button
+              onClick={async () => {
+                updateResponse(response.id, { starred: !response.starred });
+                await onReload();
+              }}
+              className={`rounded-lg p-2 hover:bg-secondary ${response.starred ? "text-primary" : "text-muted-foreground"}`}
+              title="Star"
+            >
+              <Star size={16} className={response.starred ? "fill-primary" : ""} />
+            </button>
+          )}
           <button
             onClick={async () => {
               updateResponse(response.id, { reviewed: !response.reviewed });
@@ -837,51 +889,57 @@ function ResponseCard({
           >
             <Check size={16} />
           </button>
-          <button
-            onClick={async () => {
-              deleteResponse(response.id);
-              await onReload();
-            }}
-            className="rounded-lg p-2 text-muted-foreground hover:bg-secondary hover:text-destructive"
-            title="Delete"
-          >
-            <Trash2 size={16} />
-          </button>
+          {canManageResponses && (
+            <button
+              onClick={async () => {
+                deleteResponse(response.id);
+                await onReload();
+              }}
+              className="rounded-lg p-2 text-muted-foreground hover:bg-secondary hover:text-destructive"
+              title="Delete"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
         </div>
       </div>
 
       {expanded && (
         <div className="mt-5 border-t border-border pt-5">
           <div className="mb-4 grid gap-3 md:grid-cols-[220px_1fr]">
-            <label className="block">
-              <span className="mb-1 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <Flag size={12} /> Priority
-              </span>
-              <select
-                value={response.priority || ""}
-                onChange={(event) => void setPriority(event.target.value)}
-                className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-primary"
-              >
-                <option value="">No priority</option>
-                {priorities.map((priority) => (
-                  <option key={priority.value} value={priority.value}>
-                    {priority.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block">
-              <span className="mb-1 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <MessageSquare size={12} /> Internal note
-              </span>
-              <textarea
-                rows={2}
-                value={response.internalNote || ""}
-                onChange={(event) => void setInternalNote(event.target.value)}
-                placeholder="Add review notes, next action, or context..."
-                className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-primary"
-              />
-            </label>
+            {canManageResponses && (
+              <>
+                <label className="block">
+                  <span className="mb-1 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <Flag size={12} /> Priority
+                  </span>
+                  <select
+                    value={response.priority || ""}
+                    onChange={(event) => void setPriority(event.target.value)}
+                    className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-primary"
+                  >
+                    <option value="">No priority</option>
+                    {priorities.map((priority) => (
+                      <option key={priority.value} value={priority.value}>
+                        {priority.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-1 flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <MessageSquare size={12} /> Internal note
+                  </span>
+                  <textarea
+                    rows={2}
+                    value={response.internalNote || ""}
+                    onChange={(event) => void setInternalNote(event.target.value)}
+                    placeholder="Add review notes, next action, or context..."
+                    className="w-full rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-primary"
+                  />
+                </label>
+              </>
+            )}
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {cols.map((col) => (
@@ -939,6 +997,27 @@ function ResponseValue({
     );
   }
   return <>{formatResponseValue(value) || "-"}</>;
+}
+
+function RoleAddressGroup({ label, addresses }: { label: string; addresses: string[] }) {
+  if (!addresses.length) return null;
+  return (
+    <div className="mt-3">
+      <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {addresses.map((address) => (
+          <code
+            key={`${label}-${address}`}
+            className="rounded-full bg-secondary px-3 py-1.5 font-mono text-[11px] text-foreground"
+          >
+            {address}
+          </code>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function priorityClass(priority: Priority) {

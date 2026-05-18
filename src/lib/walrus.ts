@@ -370,6 +370,7 @@ export async function getForm(blobId: string): Promise<FormSchema | null> {
     publishedFromDraftId: remote.publishedFromDraftId,
     publishedAt: remote.publishedAt || remote.createdAt || new Date().toISOString(),
     adminAddresses: remote.adminAddresses,
+    reviewerAddresses: remote.reviewerAddresses,
     accessControl: remote.accessControl,
     creatorManifestBlobId: remote.creatorManifestBlobId,
     responseIndexBlobId: remote.responseIndexBlobId,

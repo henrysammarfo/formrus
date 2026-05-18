@@ -125,7 +125,7 @@ function Docs() {
           <DocList
             items={[
               "Set a form title and description.",
-              "Add reviewer wallet addresses for your team or judging group.",
+              "Add admin wallets for full review/export permissions and reviewer-only wallets for limited review access.",
               "Choose whether respondents are public, optionally wallet-attributed, or wallet-required.",
               "Choose whether respondents can submit again after success.",
               "Choose whether unfinished responses resume on the same browser or connected wallet.",
@@ -136,7 +136,7 @@ function Docs() {
               "Choose whether the cover appears as a top banner, page background, or stays hidden.",
               "Choose a full-form response flow or a one-question-at-a-time flow.",
               "Choose a clean, confetti, or full-screen success moment after submission.",
-              "Use templates for applications, bug reports, feature requests, community surveys, and session submissions.",
+              "Use the templates page for applications, bug reports, feature requests, community surveys, and session submissions.",
               "Drag fields to reorder them. The preview and final submission order follow the same sequence.",
             ]}
           />
@@ -215,8 +215,8 @@ function Docs() {
             exposed in browser JavaScript.
           </p>
           <p className="mt-3 text-sm leading-7 text-muted-foreground">
-            The default sponsor-budget profile caps each publish request at 5 MiB, generic files at
-            3 MiB, videos at 5 MiB, and uploads at 2 files per response.
+            The default sponsor-budget profile caps each publish request at 25 MiB, generic files at
+            3 MiB, videos at 20 MiB, and uploads at 2 files per response.
           </p>
         </DocSection>
 
@@ -225,7 +225,7 @@ function Docs() {
             items={[
               "Deploy the app with production Walrus read/write configuration.",
               "Create a form from the Walrus Session template.",
-              "Confirm the required review address is present in reviewer wallet addresses.",
+              "Confirm the required review address is present in admin wallet addresses.",
               "Publish the form and copy the public form link.",
               "Submit at least one real response through the form.",
               "Open admin, import the receipt if needed, star/review the entry, and export CSV/JSON/Excel.",
