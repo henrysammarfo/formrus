@@ -90,6 +90,7 @@ export interface StoragePolicy {
 export interface ResponsePolicy {
   allowMultipleSubmissions: boolean;
   saveIncompleteResponses: boolean;
+  closesAt?: string;
 }
 
 export interface CreatorFormRef {

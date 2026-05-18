@@ -93,6 +93,23 @@ const FIELD_TYPES: FieldType[] = [
   "section",
 ];
 const FORM_TEMPLATES = getFormTemplates();
+const MAX_FILE_MB = 10;
+const MAX_VIDEO_MB = 25;
+const MAX_FILES_PER_RESPONSE = 4;
+
+function toDateTimeInputValue(value?: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return offsetDate.toISOString().slice(0, 16);
+}
+
+function fromDateTimeInputValue(value: string) {
+  if (!value) return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
 
 function Builder() {
   const [requestedDraftId] = useState(() =>
@@ -489,6 +506,23 @@ function Builder() {
                 }
               />
             </div>
+            <label className="mb-4 block rounded-xl border border-border bg-secondary/50 px-3 py-3">
+              <span className="block text-sm font-medium text-foreground">Submission deadline</span>
+              <span className="mb-2 block text-xs leading-5 text-muted-foreground">
+                Leave blank to keep this form open.
+              </span>
+              <input
+                type="datetime-local"
+                value={toDateTimeInputValue(responsePolicy.closesAt)}
+                onChange={(event) =>
+                  setResponsePolicy((prev) => ({
+                    ...prev,
+                    closesAt: fromDateTimeInputValue(event.target.value),
+                  }))
+                }
+                className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none focus:border-primary"
+              />
+            </label>
             <div className="mb-4 grid gap-3 sm:grid-cols-3">
               <label className="block">
                 <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -497,12 +531,15 @@ function Builder() {
                 <input
                   type="number"
                   min={1}
-                  max={5}
+                  max={MAX_FILE_MB}
                   value={storagePolicy.maxFileSizeMb}
                   onChange={(event) =>
                     setStoragePolicy((prev) => ({
                       ...prev,
-                      maxFileSizeMb: Math.min(5, Math.max(1, Number(event.target.value) || 1)),
+                      maxFileSizeMb: Math.min(
+                        MAX_FILE_MB,
+                        Math.max(1, Number(event.target.value) || 1),
+                      ),
                     }))
                   }
                   className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-primary"
@@ -515,12 +552,15 @@ function Builder() {
                 <input
                   type="number"
                   min={1}
-                  max={5}
+                  max={MAX_VIDEO_MB}
                   value={storagePolicy.maxVideoSizeMb}
                   onChange={(event) =>
                     setStoragePolicy((prev) => ({
                       ...prev,
-                      maxVideoSizeMb: Math.min(5, Math.max(1, Number(event.target.value) || 1)),
+                      maxVideoSizeMb: Math.min(
+                        MAX_VIDEO_MB,
+                        Math.max(1, Number(event.target.value) || 1),
+                      ),
                     }))
                   }
                   className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-primary"
@@ -533,13 +573,13 @@ function Builder() {
                 <input
                   type="number"
                   min={1}
-                  max={2}
+                  max={MAX_FILES_PER_RESPONSE}
                   value={storagePolicy.maxFilesPerResponse}
                   onChange={(event) =>
                     setStoragePolicy((prev) => ({
                       ...prev,
                       maxFilesPerResponse: Math.min(
-                        2,
+                        MAX_FILES_PER_RESPONSE,
                         Math.max(1, Number(event.target.value) || 1),
                       ),
                     }))

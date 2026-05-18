@@ -10,11 +10,12 @@
   "vars": {
     "WALRUS_EPOCHS": "5",
     "WALRUS_MAX_EPOCHS": "5",
-    "WALRUS_MAX_PUBLISH_BYTES": "5242880",
+    "WALRUS_MAX_PUBLISH_BYTES": "26214400",
     "WALRUS_RATE_LIMIT_MAX_WRITES": "5",
     "WALRUS_RATE_LIMIT_WINDOW_MS": "60000",
     "WALRUS_ALLOWED_CONTENT_TYPES": "application/json,image/*,video/*,application/pdf,text/plain,text/csv",
     "VITE_WALRUS_AGGREGATOR_URL": "https://aggregator.walrus-mainnet.walrus.space",
-    "VITE_WALRUS_EPOCHS": "5"
+    "VITE_WALRUS_EPOCHS": "5",
+    "VITE_MAX_VIDEO_MB": "20"
   }
 }

@@ -38,6 +38,12 @@ const DEFAULT_RESPONSE_POLICY = {
   saveIncompleteResponses: true,
 };
 
+function getFormCloseDate(form: FormSchema) {
+  if (!form.responsePolicy?.closesAt) return null;
+  const date = new Date(form.responsePolicy.closesAt);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 export const Route = createFileRoute("/form/$blobId")({
   ssr: false,
   head: ({ params }) => ({
@@ -83,6 +89,8 @@ function FormView() {
   const progress = totalFields ? Math.round((filled / totalFields) * 100) : 0;
   const responseLayout = form?.branding?.responseLayout || "standard";
   const responsePolicy = form?.responsePolicy || DEFAULT_RESPONSE_POLICY;
+  const closeDate = form ? getFormCloseDate(form) : null;
+  const isClosed = closeDate ? closeDate.getTime() <= Date.now() : false;
   const isStepper = responseLayout === "stepper" && inputFields.length > 1;
   const currentStepIndex = Math.min(activeStep, Math.max(inputFields.length - 1, 0));
   const currentField = inputFields[currentStepIndex];
@@ -123,6 +131,11 @@ function FormView() {
 
   const submitValues = async () => {
     if (!form) return;
+    const currentCloseDate = getFormCloseDate(form);
+    if (currentCloseDate && currentCloseDate.getTime() <= Date.now()) {
+      toast.error("This form is closed for new submissions");
+      return;
+    }
     if (!responsePolicy.allowMultipleSubmissions && priorSubmission) {
       toast.error("This form only accepts one response from this browser or wallet");
       return;
@@ -220,6 +233,34 @@ function FormView() {
         >
           Build one
         </Link>
+      </div>
+    );
+  }
+  if (isClosed) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#fbfcfd] px-4 py-10">
+        <div className="w-full max-w-md rounded-3xl border border-border bg-white px-6 py-12 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-secondary text-primary">
+            <Check size={26} />
+          </div>
+          <h1
+            className="text-2xl font-semibold text-foreground"
+            style={{ fontFamily: "'Outfit', sans-serif" }}
+          >
+            This form is closed
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+            The submission deadline passed
+            {closeDate ? ` on ${closeDate.toLocaleString()}` : ""}. New responses are no longer
+            accepted.
+          </p>
+          <Link
+            to="/"
+            className="mt-6 inline-flex rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
+          >
+            Back home
+          </Link>
+        </div>
       </div>
     );
   }
@@ -382,6 +423,11 @@ function FormView() {
               <span className="mt-4 inline-block rounded-full bg-accent px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
                 Private response
               </span>
+            )}
+            {closeDate && (
+              <p className="mt-4 rounded-2xl border border-border bg-secondary/50 px-4 py-3 text-sm text-muted-foreground">
+                Submissions close {closeDate.toLocaleString()}.
+              </p>
             )}
             {form.submitterMode && form.submitterMode !== "public" && (
               <div className="mt-5 rounded-2xl border border-border bg-secondary/50 p-4">

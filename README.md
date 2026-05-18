@@ -73,7 +73,7 @@ If a hosted sponsor such as Nami is unavailable, run your own authenticated Walr
 WALRUS_PUBLISHER_URL=https://your-auth-publisher.example.com
 WALRUS_EPOCHS=5
 WALRUS_MAX_EPOCHS=5
-WALRUS_MAX_PUBLISH_BYTES=5242880
+WALRUS_MAX_PUBLISH_BYTES=26214400
 WALRUS_RATE_LIMIT_MAX_WRITES=5
 WALRUS_RATE_LIMIT_WINDOW_MS=60000
 WALRUS_ALLOWED_CONTENT_TYPES=application/json,image/*,video/*,application/pdf,text/plain,text/csv

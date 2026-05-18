@@ -133,7 +133,7 @@ export function makeBlobId(): string {
 export function getDefaultStoragePolicy(): StoragePolicy {
   return {
     maxFileSizeMb: Number(env.VITE_MAX_FILE_MB || 3),
-    maxVideoSizeMb: Number(env.VITE_MAX_VIDEO_MB || 5),
+    maxVideoSizeMb: Number(env.VITE_MAX_VIDEO_MB || 20),
     maxFilesPerResponse: Number(env.VITE_MAX_FILES_PER_RESPONSE || 2),
     allowedMimeTypes: (
       env.VITE_ALLOWED_UPLOAD_MIME_TYPES ||
